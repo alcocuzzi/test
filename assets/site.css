@@ -1,0 +1,47 @@
+/* Minimal local behavior/styles to replace Framer runtime. */
+
+/* --- Mobile nav (Phone) --- */
+nav[data-framer-name^="Phone"] .framer-znydzo,
+nav[data-framer-name^="Phone"] .framer-mpwq99 {
+    display: none;
+}
+
+nav[data-framer-name^="Phone"].dc-nav-open {
+    max-height: 100vh;
+    overflow: visible;
+}
+
+nav[data-framer-name^="Phone"].dc-nav-open .framer-znydzo {
+    display: block;
+}
+
+nav[data-framer-name^="Phone"].dc-nav-open .framer-mpwq99 {
+    display: flex;
+}
+
+nav[data-framer-name^="Phone"] .framer-mpwq99 {
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+    padding: 16px 0 0;
+}
+
+nav[data-framer-name^="Phone"] .framer-9nm0ka-container,
+nav[data-framer-name^="Phone"] .framer-17kpicg-container,
+nav[data-framer-name^="Phone"] .framer-14nvl4n-container,
+nav[data-framer-name^="Phone"] .framer-14nvl4n-container {
+    width: 100%;
+}
+
+/* --- FAQ accordion --- */
+[data-dc-faq-answer] {
+    display: none;
+}
+
+[data-dc-faq-item].dc-open [data-dc-faq-answer] {
+    display: block;
+}
+
+[data-dc-faq-item].dc-open .framer-dombwf {
+    opacity: 0;
+}

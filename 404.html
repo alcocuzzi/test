@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Redirecting...</title>
+    <script>
+        // Get the current path
+        const path = window.location.pathname;
+        
+        // Redirect to the appropriate page.html
+        if (path.includes('/about')) {
+            window.location.replace('/about/page.html');
+        } else if (path.includes('/contact')) {
+            window.location.replace('/contact/page.html');
+        } else if (path.includes('/privacy')) {
+            window.location.replace('/privacy/page.html');
+        }
+    </script>
+</head>
+<body>
+    <p>Redirecting...</p>
+</body>
+</html>
