@@ -91,6 +91,27 @@ function unhideFramerAppearElements() {
     }
 }
 
+function initContactStepSequence() {
+    const path = (window.location && window.location.pathname) ? window.location.pathname : "";
+    const isContactPage = /(^|\/)contact\/?($|index\.html$)/i.test(path);
+    if (!isContactPage) return;
+
+    const step2 = document.getElementById("contact");
+    if (!step2) return;
+
+    // If the user navigates directly to #contact (e.g. from a "Let's Talk" link),
+    // keep Step 2 visible immediately.
+    const directToContact = (window.location.hash || "") === "#contact";
+    if (directToContact) return;
+
+    const prevDisplay = step2.style.display;
+    step2.style.display = "none";
+
+    window.setTimeout(() => {
+        step2.style.display = prevDisplay;
+    }, 500);
+}
+
 function initMobileNav() {
     const phoneNavs = Array.from(document.querySelectorAll('nav[data-framer-name^="Phone"]'));
 
@@ -291,6 +312,7 @@ function initContactFormMailto() {
 document.addEventListener("DOMContentLoaded", () => {
     decodeEmailProtectionLinks();
     rewriteOriginalSizes();
+    initContactStepSequence();
     unhideFramerAppearElements();
     initMobileNav();
     initFaqAccordion();
