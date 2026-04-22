@@ -17,7 +17,7 @@ function decodeCloudflareEmail(hex) {
 
 function decodeEmailProtectionLinks() {
     // 1) Cloudflare email-protection links: /cdn-cgi/l/email-protection#<hex>
-    for (const a of document.querySelectorAll('a[href^="/cdn-cgi/l/email-protection#"]')) {
+    for (const a of document.querySelectorAll('a[href^="/cdn-cgi/l/email-protection#"], a[href^="cdn-cgi/l/email-protection#"]')) {
         const href = a.getAttribute("href") || "";
         const hashIndex = href.indexOf("#");
         if (hashIndex === -1) continue;
@@ -227,7 +227,7 @@ function getFirstPageEmail() {
         return href.slice("mailto:".length);
     }
 
-    const protectedLink = document.querySelector('a[href^="/cdn-cgi/l/email-protection#"]');
+    const protectedLink = document.querySelector('a[href^="/cdn-cgi/l/email-protection#"], a[href^="cdn-cgi/l/email-protection#"]');
     if (protectedLink) {
         const href = protectedLink.getAttribute("href") || "";
         const hashIndex = href.indexOf("#");
