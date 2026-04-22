@@ -212,10 +212,130 @@ function initMobileNav() {
 }
 
 function initFaqAccordion() {
-    const items = Array.from(document.querySelectorAll("[data-dc-faq-item]"));
+    // Existing markup from Framer renders the FAQ questions but omits the answers in the static HTML.
+    // The answers are embedded in the `__framer__handoverData` JSON; we hydrate them here.
+
+    const inferredItems = Array.from(document.querySelectorAll('#faq .framer-bywgyu .framer-E4aZ3[tabindex]'));
+    const declaredItems = Array.from(document.querySelectorAll("[data-dc-faq-item]"));
+    const items = Array.from(new Set([...declaredItems, ...inferredItems]));
+    if (!items.length) return;
+
+    const handoverScript = document.getElementById("__framer__handoverData");
+    const handoverText = (handoverScript && handoverScript.textContent) ? handoverScript.textContent : "";
+
+    const flattenStrings = (node, out) => {
+        if (!node) return;
+        if (typeof node === "string") {
+            out.push(node);
+            return;
+        }
+        if (Array.isArray(node)) {
+            for (const v of node) flattenStrings(v, out);
+        }
+    };
+
+    const handoverStrings = (() => {
+        if (!handoverText) return null;
+        try {
+            const parsed = JSON.parse(handoverText);
+            const out = [];
+            flattenStrings(parsed, out);
+            return out;
+        } catch {
+            return null;
+        }
+    })();
+
+    const escapeRegExp = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    const findAnswer = (question) => {
+        const q = (question || "").trim();
+        if (!q) return null;
+
+        if (handoverStrings) {
+            const idx = handoverStrings.indexOf(q);
+            if (idx !== -1) {
+                for (let i = idx + 1; i < Math.min(idx + 25, handoverStrings.length); i++) {
+                    const candidate = handoverStrings[i];
+                    if (typeof candidate === "string" && candidate.trim() && candidate.trim() !== q) {
+                        return candidate;
+                    }
+                }
+            }
+        }
+
+        // Fallback: search raw JSON text.
+        if (handoverText) {
+            const pattern = new RegExp(`${escapeRegExp(JSON.stringify(q).slice(1, -1))}",\\s*\\{\\"type\\":18,\\"value\\":\\d+\\},\\s*\\"([\\s\\S]*?)\\"`, "u");
+            const m = handoverText.match(pattern);
+            if (m && m[1]) {
+                // Unescape common JSON escapes.
+                return m[1]
+                    .replace(/\\n/g, "\n")
+                    .replace(/\\r/g, "\r")
+                    .replace(/\\t/g, "\t")
+                    .replace(/\\\"/g, '"')
+                    .replace(/\\\\/g, "\\");
+            }
+        }
+
+        return null;
+    };
+
+    const renderAnswerInto = (container, answerText) => {
+        while (container.firstChild) container.removeChild(container.firstChild);
+
+        const text = (answerText || "").trim();
+        if (!text) return;
+
+        const blocks = text.split(/\n\s*\n/gu).map((b) => b.trim()).filter(Boolean);
+        for (const block of blocks) {
+            const p = document.createElement("p");
+            p.className = "framer-text framer-styles-preset-1yhjbal";
+            p.setAttribute("data-styles-preset", "Iz6fkU9FB");
+
+            const lines = block.split(/\n/gu);
+            lines.forEach((line, idx) => {
+                p.appendChild(document.createTextNode(line));
+                if (idx < lines.length - 1) p.appendChild(document.createElement("br"));
+            });
+
+            container.appendChild(p);
+        }
+    };
+
     for (const item of items) {
+        if (!(item instanceof HTMLElement)) continue;
+        if (item.dataset.dcFaqHydrated === "true") continue;
+        item.dataset.dcFaqHydrated = "true";
+
+        item.setAttribute("data-dc-faq-item", "");
         item.setAttribute("role", "button");
         item.setAttribute("aria-expanded", "false");
+        item.classList.remove("dc-open");
+
+        const questionEl = item.querySelector("h3");
+        const questionText = questionEl ? (questionEl.textContent || "").trim() : "";
+        const answerText = findAnswer(questionText);
+
+        let answerEl = item.querySelector("[data-dc-faq-answer]");
+        if (!answerEl) {
+            answerEl = document.createElement("div");
+            answerEl.className = "framer-14897r4";
+            answerEl.setAttribute("data-framer-component-type", "RichTextContainer");
+            answerEl.setAttribute("data-dc-faq-answer", "");
+            answerEl.setAttribute("style", "transform:none");
+
+            // Insert after the top part if present, else append.
+            const top = item.querySelector(":scope > .framer-2k822i");
+            if (top && top.parentElement === item) {
+                top.insertAdjacentElement("afterend", answerEl);
+            } else {
+                item.appendChild(answerEl);
+            }
+        }
+
+        renderAnswerInto(answerEl, answerText);
 
         const toggle = () => {
             const open = !item.classList.contains("dc-open");
