@@ -94,75 +94,6 @@ function unhideFramerAppearElements() {
     }
 }
 
-function dcNormalizeText(s) {
-    return String(s || "")
-        .replace(/\s+/g, " ")
-        .trim()
-        .toLowerCase();
-}
-
-function dcRevealAppearLikeFramer(root) {
-    if (!root) return;
-
-    const nodes = [
-        root,
-        ...Array.from(
-            root.querySelectorAll(
-                '[style*="opacity:0.001"], [style*="opacity: 0.001"], [style*="filter:blur"], [style*="filter: blur"]'
-            )
-        ),
-    ];
-
-    for (const el of nodes) {
-        if (!(el instanceof HTMLElement)) continue;
-
-        el.style.transition = el.style.transition || "opacity 400ms ease, transform 400ms ease, filter 400ms ease";
-
-        if (el.style.opacity && parseFloat(el.style.opacity) <= 0.01) {
-            el.style.opacity = "1";
-        }
-
-        if (el.style.filter) el.style.filter = "";
-        if (el.style.transform) el.style.transform = "none";
-        if (el.style.willChange) el.style.willChange = "auto";
-    }
-}
-
-function dcGetWordSpans(headingEl) {
-    if (!headingEl) return [];
-    const all = Array.from(headingEl.querySelectorAll('span[style*="white-space:nowrap"], span[style*="white-space: nowrap"]'));
-    const words = all.filter((span) => {
-        if (!(span instanceof HTMLElement)) return false;
-        const text = (span.textContent || "").replace(/\s+/g, "").trim();
-        if (!text) return false;
-        return span.querySelector("span") != null;
-    });
-
-    // Framer sometimes nests nowrap spans; keep the outermost ones to represent whole words.
-    return words.filter((span) => !words.some((other) => other !== span && other.contains(span)));
-}
-
-function dcRevealHeadingWordByWord(headingEl, { perWordDelayMs = 140, initialDelayMs = 0 } = {}) {
-    if (!headingEl) return 0;
-
-    const wordSpans = dcGetWordSpans(headingEl);
-    if (wordSpans.length === 0) {
-        dcRevealAppearLikeFramer(headingEl);
-        return 0;
-    }
-
-    // Ensure the global unhide won't override this animation.
-    headingEl.setAttribute("data-dc-appear-skip", "true");
-
-    window.requestAnimationFrame(() => {
-        wordSpans.forEach((word, i) => {
-            window.setTimeout(() => dcRevealAppearLikeFramer(word), initialDelayMs + i * perWordDelayMs);
-        });
-    });
-
-    return initialDelayMs + (wordSpans.length - 1) * perWordDelayMs;
-}
-
 function initHomeHeroSequence() {
     // Homepage hero text should appear in order:
     // 1) "Do you want an organized life?"
@@ -191,7 +122,7 @@ function initHomeHeroSequence() {
     })();
 
     const h1Candidates = Array.from((commonAncestor || document).querySelectorAll("h1"));
-    const line1 = h1Candidates.find((h1) => dcNormalizeText(h1.textContent).includes("organized life")) || null;
+    const line1 = h1Candidates.find((h1) => (h1.textContent || "").includes("organized life")) || null;
     if (!line1) return;
 
     // Mark the sequence elements so the global unhide doesn't force them visible.
@@ -199,14 +130,32 @@ function initHomeHeroSequence() {
     line2.setAttribute("data-dc-appear-skip", "true");
     line3.setAttribute("data-dc-appear-skip", "true");
 
-    // Keep lines 2/3 hidden initially (they already are by inline styles).
-    // Reveal line 1 word-by-word, then line 2 fully, then line 3 fully.
-    const headingLastWordAt = dcRevealHeadingWordByWord(line1, { perWordDelayMs: 140, initialDelayMs: 0 });
-    const line2At = headingLastWordAt + 260;
-    const line3At = line2At + 350;
+    const revealAppearLikeFramer = (root) => {
+        if (!root) return;
 
-    window.setTimeout(() => dcRevealAppearLikeFramer(line2), line2At);
-    window.setTimeout(() => dcRevealAppearLikeFramer(line3), line3At);
+        const nodes = [root, ...Array.from(root.querySelectorAll('[style*="opacity:0.001"], [style*="opacity: 0.001"], [style*="filter:blur"], [style*="filter: blur"]'))];
+        for (const el of nodes) {
+            if (!(el instanceof HTMLElement)) continue;
+
+            el.style.transition = el.style.transition || "opacity 400ms ease, transform 400ms ease, filter 400ms ease";
+
+            if (el.style.opacity && parseFloat(el.style.opacity) <= 0.01) {
+                el.style.opacity = "1";
+            }
+
+            if (el.style.filter) el.style.filter = "";
+            if (el.style.transform) el.style.transform = "none";
+            if (el.style.willChange) el.style.willChange = "auto";
+        }
+    };
+
+    // Keep lines 2/3 hidden initially (they already are by inline styles);
+    // reveal line 1 immediately, then line 2, then line 3.
+    window.requestAnimationFrame(() => {
+        revealAppearLikeFramer(line1);
+        window.setTimeout(() => revealAppearLikeFramer(line2), 350);
+        window.setTimeout(() => revealAppearLikeFramer(line3), 700);
+    });
 }
 
 function initContactStepSequence() {
@@ -218,63 +167,16 @@ function initContactStepSequence() {
     if (!step2) return;
 
     // If the user navigates directly to #contact (e.g. from a "Let's Talk" link),
-    // keep Step 2 visible immediately and let the global unhide run.
+    // keep Step 2 visible immediately.
     const directToContact = (window.location.hash || "") === "#contact";
     if (directToContact) return;
-
-    const findFirstAppearLikeByText = (scope, needle) => {
-        const target = dcNormalizeText(needle);
-        const candidates = Array.from(
-            scope.querySelectorAll(
-                '[style*="opacity:0.001"], [style*="opacity: 0.001"], [style*="filter:blur"], [style*="filter: blur"]'
-            )
-        );
-        return candidates.find((el) => dcNormalizeText(el.textContent).includes(target)) || null;
-    };
-
-    const hero = document.getElementById("hero") || document.querySelector("header#hero") || document.querySelector("header");
-    const heroH1 = (() => {
-        const h1s = Array.from((hero || document).querySelectorAll("h1"));
-        return h1s.find((h1) => dcNormalizeText(h1.textContent).includes("get in touch")) || null;
-    })();
-
-    const heroParagraph = findFirstAppearLikeByText(document, "Ready to transform");
-
-    // Step 2 blocks (inside #contact).
-    const chooseBlock = findFirstAppearLikeByText(step2, "Choose how");
-    const replyBlock = findFirstAppearLikeByText(step2, "I usually reply");
-    const whatsApp = findFirstAppearLikeByText(step2, "WhatsApp");
-    const sms = findFirstAppearLikeByText(step2, "SMS");
-    const email = findFirstAppearLikeByText(step2, "E-mail");
-
-    // Mark the sequence elements so the global unhide doesn't force them visible.
-    if (heroH1) heroH1.setAttribute("data-dc-appear-skip", "true");
-    if (heroParagraph) heroParagraph.setAttribute("data-dc-appear-skip", "true");
-    step2.setAttribute("data-dc-appear-skip", "true");
 
     const prevDisplay = step2.style.display;
     step2.style.display = "none";
 
-    const headingLastWordAt = heroH1
-        ? dcRevealHeadingWordByWord(heroH1, { perWordDelayMs: 140, initialDelayMs: 0 })
-        : 0;
-
-    const paragraphAt = headingLastWordAt + 220;
-    const step2ShowAt = paragraphAt + 520;
-
-    window.setTimeout(() => dcRevealAppearLikeFramer(heroParagraph), paragraphAt);
-
     window.setTimeout(() => {
         step2.style.display = prevDisplay;
-        // Reveal the "Choose..." and "I usually reply..." blocks together.
-        dcRevealAppearLikeFramer(chooseBlock);
-        dcRevealAppearLikeFramer(replyBlock);
-    }, step2ShowAt);
-
-    const optionsStartAt = step2ShowAt + 520;
-    window.setTimeout(() => dcRevealAppearLikeFramer(whatsApp), optionsStartAt);
-    window.setTimeout(() => dcRevealAppearLikeFramer(sms), optionsStartAt + 500);
-    window.setTimeout(() => dcRevealAppearLikeFramer(email), optionsStartAt + 1000);
+    }, 500);
 }
 
 function initMobileNav() {
