@@ -70,6 +70,9 @@ function unhideFramerAppearElements() {
     );
 
     for (const el of candidates) {
+        // Allow page-specific sequences to manage initial appear elements.
+        if (el.closest('[data-dc-appear-skip="true"]')) continue;
+
         const style = el.getAttribute("style") || "";
         // Only touch elements that look like Framer's initial appear state.
         const looksLikeAppear =
@@ -89,6 +92,70 @@ function unhideFramerAppearElements() {
         if (el.style.transform) el.style.transform = "none";
         if (el.style.willChange) el.style.willChange = "auto";
     }
+}
+
+function initHomeHeroSequence() {
+    // Homepage hero text should appear in order:
+    // 1) "Do you want an organized life?"
+    // 2) "Start with your home."
+    // 3) "Changing the space where you live…"
+
+    const findAppearContainerByText = (needle) => {
+        const containers = Array.from(
+            document.querySelectorAll('[data-framer-component-type="RichTextContainer"][style*="opacity:0.001"], [data-framer-component-type="RichTextContainer"][style*="opacity: 0.001"]')
+        );
+        return containers.find((el) => (el.textContent || "").includes(needle)) || null;
+    };
+
+    const line2 = findAppearContainerByText("Start with your home.");
+    const line3 = findAppearContainerByText("Changing the space where you live");
+    if (!line2 || !line3) return;
+
+    // Find the H1 that contains the question.
+    const commonAncestor = (() => {
+        let cur = line2;
+        while (cur && cur !== document.body) {
+            if (cur instanceof Element && cur.contains(line3)) return cur;
+            cur = cur.parentElement;
+        }
+        return null;
+    })();
+
+    const h1Candidates = Array.from((commonAncestor || document).querySelectorAll("h1"));
+    const line1 = h1Candidates.find((h1) => (h1.textContent || "").includes("organized life")) || null;
+    if (!line1) return;
+
+    // Mark the sequence elements so the global unhide doesn't force them visible.
+    line1.setAttribute("data-dc-appear-skip", "true");
+    line2.setAttribute("data-dc-appear-skip", "true");
+    line3.setAttribute("data-dc-appear-skip", "true");
+
+    const revealAppearLikeFramer = (root) => {
+        if (!root) return;
+
+        const nodes = [root, ...Array.from(root.querySelectorAll('[style*="opacity:0.001"], [style*="opacity: 0.001"], [style*="filter:blur"], [style*="filter: blur"]'))];
+        for (const el of nodes) {
+            if (!(el instanceof HTMLElement)) continue;
+
+            el.style.transition = el.style.transition || "opacity 400ms ease, transform 400ms ease, filter 400ms ease";
+
+            if (el.style.opacity && parseFloat(el.style.opacity) <= 0.01) {
+                el.style.opacity = "1";
+            }
+
+            if (el.style.filter) el.style.filter = "";
+            if (el.style.transform) el.style.transform = "none";
+            if (el.style.willChange) el.style.willChange = "auto";
+        }
+    };
+
+    // Keep lines 2/3 hidden initially (they already are by inline styles);
+    // reveal line 1 immediately, then line 2, then line 3.
+    window.requestAnimationFrame(() => {
+        revealAppearLikeFramer(line1);
+        window.setTimeout(() => revealAppearLikeFramer(line2), 350);
+        window.setTimeout(() => revealAppearLikeFramer(line3), 700);
+    });
 }
 
 function initContactStepSequence() {
@@ -313,6 +380,7 @@ document.addEventListener("DOMContentLoaded", () => {
     decodeEmailProtectionLinks();
     rewriteOriginalSizes();
     initContactStepSequence();
+    initHomeHeroSequence();
     unhideFramerAppearElements();
     initMobileNav();
     initFaqAccordion();
