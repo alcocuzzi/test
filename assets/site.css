@@ -1,36 +1,6 @@
-/* Custom Animation Classes */
-.dc-reveal-hidden {
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
-}
+/* Minimal local behavior/styles to replace Framer runtime. */
 
-.dc-reveal-visible {
-    opacity: 1 !important;
-    transform: translateY(0) !important;
-    filter: none !important;
-}
-
-.dc-word {
-    display: inline-block;
-    opacity: 0;
-    filter: blur(4px);
-    transform: scale(1.1);
-    transition: opacity 0.4s ease, filter 0.4s ease, transform 0.4s ease;
-}
-
-.dc-word.dc-reveal-visible {
-    opacity: 1;
-    filter: blur(0);
-    transform: scale(1);
-}
-
-/* Base styles for the reveal containers to prevent layout shift */
-[data-dc-reveal] {
-    opacity: 0;
-}
-
-/* Mobile nav logic kept from original */
+/* --- Mobile nav (Phone) --- */
 nav[data-framer-name^="Phone"] .framer-znydzo,
 nav[data-framer-name^="Phone"] .framer-mpwq99 {
     display: none;
@@ -58,11 +28,12 @@ nav[data-framer-name^="Phone"] .framer-mpwq99 {
 
 nav[data-framer-name^="Phone"] .framer-9nm0ka-container,
 nav[data-framer-name^="Phone"] .framer-17kpicg-container,
+nav[data-framer-name^="Phone"] .framer-14nvl4n-container,
 nav[data-framer-name^="Phone"] .framer-14nvl4n-container {
     width: 100%;
 }
 
-/* FAQ accordion */
+/* --- FAQ accordion --- */
 [data-dc-faq-answer] {
     display: none;
 }
