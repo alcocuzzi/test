@@ -282,6 +282,8 @@ function initFaqAccordion() {
         return null;
     };
 
+    const BLACK = "var(--token-1b7bb1c4-3a89-4ec2-aee2-16abaf604d08, rgb(0, 0, 0))";
+
     const renderAnswerInto = (container, answerText) => {
         while (container.firstChild) container.removeChild(container.firstChild);
 
@@ -293,6 +295,9 @@ function initFaqAccordion() {
             const p = document.createElement("p");
             p.className = "framer-text framer-styles-preset-1yhjbal";
             p.setAttribute("data-styles-preset", "Iz6fkU9FB");
+            // Ensure readable text on the FAQ's white background.
+            p.style.setProperty("--framer-text-color", BLACK);
+            p.style.color = BLACK;
 
             const lines = block.split(/\n/gu);
             lines.forEach((line, idx) => {
@@ -324,7 +329,7 @@ function initFaqAccordion() {
             answerEl.className = "framer-14897r4";
             answerEl.setAttribute("data-framer-component-type", "RichTextContainer");
             answerEl.setAttribute("data-dc-faq-answer", "");
-            answerEl.setAttribute("style", "transform:none");
+            answerEl.setAttribute("style", `--framer-text-color:${BLACK};color:${BLACK};transform:none`);
 
             // Insert after the top part if present, else append.
             const top = item.querySelector(":scope > .framer-2k822i");
